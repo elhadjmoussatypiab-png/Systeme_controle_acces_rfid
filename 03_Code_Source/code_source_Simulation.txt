@@ -1,0 +1,161 @@
+#include <Keypad.h>
+#include <LiquidCrystal_I2C.h>
+#include<Servo.h>
+
+Servo porte;
+const int buzzer = 10;
+
+LiquidCrystal_I2C lcd(0x20,16,2);
+
+const byte LIGNES = 4;
+const byte COLONNES = 4;
+ bool bon = false ;
+char touches[LIGNES][COLONNES] = {
+{'1','2','3','A'},
+{'4','5','6','B'},
+{'7','8','9','C'},
+{'*','0','#','D'}
+};
+
+byte brochesLignes[LIGNES] = {9, 8, 7, 6};
+byte brochesColonnes[COLONNES] = {5, 4, 3, 2};
+
+Keypad clavier = Keypad(
+makeKeymap(touches),
+brochesLignes,
+brochesColonnes,
+LIGNES,
+COLONNES
+);
+
+String codeCorrect = "0000";
+String codeTape = "";
+
+void setup() {
+  lcd.init();lcd.backlight();
+  affichebonjour();
+ 
+  pinMode(buzzer, OUTPUT);
+  porte.attach(13);
+ 
+
+pinMode(12, OUTPUT);
+pinMode(11, OUTPUT);
+
+digitalWrite(12, LOW);
+digitalWrite(11, LOW);
+}
+
+void loop() {
+  int resultat = codetape();
+  if (resultat == 1){
+    affichecorrect();
+    autorisation ();
+   
+ 
+    delay(2000);
+    noTone(buzzer);
+    lcd.clear();
+    affichebonjour();
+   
+  }
+  else if (resultat == 2) {
+    afficheincorrect();
+    bip_refus ();
+   
+    delay(2000);
+    lcd.clear();
+    affichebonjour();
+  }
+ 
+   
+}
+
+
+int codetape(){
+ char touche = clavier.getKey();
+ 
+    if (touche) {
+      codeTape = codeTape + touche;
+ 
+        if (codeTape.length() == 4) {
+            if (codeTape == codeCorrect) {
+            codeTape = "";
+             return 1;
+            }
+             else {
+               codeTape = "";
+             return 2;
+         }
+      }
+    }
+  return 0 ;
+}
+
+
+void affichebonjour(){
+  lcd.setCursor(3,0);
+  lcd.print(" BONJOUR ");
+  lcd.setCursor(0,1);
+  lcd.print(" TAPER LE CODE ");
+}
+
+void affichecorrect(){
+            lcd.clear();
+            lcd.setCursor(2,0);
+            lcd.print("CODE CORRECT");
+            lcd.setCursor(1,1);
+            lcd.print("PORTE OUVERTE");
+
+}
+
+void afficheincorrect(){
+              lcd.clear();
+            lcd.setCursor(5,0);
+            lcd.print("CODE ");
+            lcd.setCursor(3,1);
+            lcd.print("INCORRECT");
+
+}
+
+void allumefaux(){
+         digitalWrite(12, LOW);
+         digitalWrite(11, HIGH);
+
+}
+
+void allumevraie(){
+         digitalWrite(12,HIGH);
+         digitalWrite(11, LOW);
+         
+
+}
+
+
+void autorisation (){
+  tone(buzzer, 600);
+  allumevraie();
+  porte.write(180);
+ 
+  delay(1000);
+ 
+  noTone(buzzer);
+  porte.write(90);
+  digitalWrite(12, LOW);
+  digitalWrite(11, LOW);
+ 
+
+}
+
+void bip_refus (){
+  allumefaux();
+  for (int i=0; i<3; i++){
+   tone(buzzer, 600);
+    delay(200);
+    noTone(buzzer);
+    delay(150);
+    }
+  delay(1000);
+  digitalWrite(12, LOW);
+  digitalWrite(11, LOW);
+}
